@@ -1,0 +1,550 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "Loading tidyverse: ggplot2\n",
+      "Loading tidyverse: tibble\n",
+      "Loading tidyverse: tidyr\n",
+      "Loading tidyverse: readr\n",
+      "Loading tidyverse: purrr\n",
+      "Loading tidyverse: dplyr\n",
+      "Conflicts with tidy packages ---------------------------------------------------\n",
+      "filter(): dplyr, stats\n",
+      "lag():    dplyr, stats\n",
+      "\n",
+      "Attaching package: ‘testthat’\n",
+      "\n",
+      "The following object is masked from ‘package:dplyr’:\n",
+      "\n",
+      "    matches\n",
+      "\n",
+      "The following object is masked from ‘package:purrr’:\n",
+      "\n",
+      "    is_null\n",
+      "\n",
+      "Loading required package: lattice\n",
+      "\n",
+      "Attaching package: ‘caret’\n",
+      "\n",
+      "The following object is masked from ‘package:purrr’:\n",
+      "\n",
+      "    lift\n",
+      "\n",
+      "Updating HTML index of packages in '.Library'\n",
+      "Making 'packages.html' ... done\n"
+     ]
+    }
+   ],
+   "source": [
+    "### Run this cell before continuing.\n",
+    "library(repr)\n",
+    "library(tidyverse)\n",
+    "library(testthat)\n",
+    "library(digest)\n",
+    "library(caret)\n",
+    "library(stringr)\n",
+    "install.packages('e1071')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "Parsed with column specification:\n",
+      "cols(\n",
+      "  `fixed acidity` = col_double(),\n",
+      "  `volatile acidity` = col_double(),\n",
+      "  `citric acid` = col_double(),\n",
+      "  `residual sugar` = col_double(),\n",
+      "  chlorides = col_double(),\n",
+      "  `free sulfur dioxide` = col_double(),\n",
+      "  `total sulfur dioxide` = col_double(),\n",
+      "  density = col_double(),\n",
+      "  pH = col_double(),\n",
+      "  sulphates = col_double(),\n",
+      "  alcohol = col_double(),\n",
+      "  quality = col_integer()\n",
+      ")\n"
+     ]
+    },
+    {
+     "data": {
+      "text/html": [
+       "<table>\n",
+       "<thead><tr><th scope=col>fixed acidity</th><th scope=col>volatile acidity</th><th scope=col>citric acid</th><th scope=col>residual sugar</th><th scope=col>chlorides</th><th scope=col>free sulfur dioxide</th><th scope=col>total sulfur dioxide</th><th scope=col>density</th><th scope=col>pH</th><th scope=col>sulphates</th><th scope=col>alcohol</th><th scope=col>quality</th></tr></thead>\n",
+       "<tbody>\n",
+       "\t<tr><td>7.0   </td><td>0.27  </td><td>0.36  </td><td>20.7  </td><td>0.045 </td><td>45    </td><td>170   </td><td>1.0010</td><td>3.00  </td><td>0.45  </td><td> 8.8  </td><td>6     </td></tr>\n",
+       "\t<tr><td>6.3   </td><td>0.30  </td><td>0.34  </td><td> 1.6  </td><td>0.049 </td><td>14    </td><td>132   </td><td>0.9940</td><td>3.30  </td><td>0.49  </td><td> 9.5  </td><td>6     </td></tr>\n",
+       "\t<tr><td>8.1   </td><td>0.28  </td><td>0.40  </td><td> 6.9  </td><td>0.050 </td><td>30    </td><td> 97   </td><td>0.9951</td><td>3.26  </td><td>0.44  </td><td>10.1  </td><td>6     </td></tr>\n",
+       "\t<tr><td>7.2   </td><td>0.23  </td><td>0.32  </td><td> 8.5  </td><td>0.058 </td><td>47    </td><td>186   </td><td>0.9956</td><td>3.19  </td><td>0.40  </td><td> 9.9  </td><td>6     </td></tr>\n",
+       "\t<tr><td>7.2   </td><td>0.23  </td><td>0.32  </td><td> 8.5  </td><td>0.058 </td><td>47    </td><td>186   </td><td>0.9956</td><td>3.19  </td><td>0.40  </td><td> 9.9  </td><td>6     </td></tr>\n",
+       "\t<tr><td>8.1   </td><td>0.28  </td><td>0.40  </td><td> 6.9  </td><td>0.050 </td><td>30    </td><td> 97   </td><td>0.9951</td><td>3.26  </td><td>0.44  </td><td>10.1  </td><td>6     </td></tr>\n",
+       "</tbody>\n",
+       "</table>\n"
+      ],
+      "text/latex": [
+       "\\begin{tabular}{r|llllllllllll}\n",
+       " fixed acidity & volatile acidity & citric acid & residual sugar & chlorides & free sulfur dioxide & total sulfur dioxide & density & pH & sulphates & alcohol & quality\\\\\n",
+       "\\hline\n",
+       "\t 7.0    & 0.27   & 0.36   & 20.7   & 0.045  & 45     & 170    & 1.0010 & 3.00   & 0.45   &  8.8   & 6     \\\\\n",
+       "\t 6.3    & 0.30   & 0.34   &  1.6   & 0.049  & 14     & 132    & 0.9940 & 3.30   & 0.49   &  9.5   & 6     \\\\\n",
+       "\t 8.1    & 0.28   & 0.40   &  6.9   & 0.050  & 30     &  97    & 0.9951 & 3.26   & 0.44   & 10.1   & 6     \\\\\n",
+       "\t 7.2    & 0.23   & 0.32   &  8.5   & 0.058  & 47     & 186    & 0.9956 & 3.19   & 0.40   &  9.9   & 6     \\\\\n",
+       "\t 7.2    & 0.23   & 0.32   &  8.5   & 0.058  & 47     & 186    & 0.9956 & 3.19   & 0.40   &  9.9   & 6     \\\\\n",
+       "\t 8.1    & 0.28   & 0.40   &  6.9   & 0.050  & 30     &  97    & 0.9951 & 3.26   & 0.44   & 10.1   & 6     \\\\\n",
+       "\\end{tabular}\n"
+      ],
+      "text/markdown": [
+       "\n",
+       "fixed acidity | volatile acidity | citric acid | residual sugar | chlorides | free sulfur dioxide | total sulfur dioxide | density | pH | sulphates | alcohol | quality | \n",
+       "|---|---|---|---|---|---|\n",
+       "| 7.0    | 0.27   | 0.36   | 20.7   | 0.045  | 45     | 170    | 1.0010 | 3.00   | 0.45   |  8.8   | 6      | \n",
+       "| 6.3    | 0.30   | 0.34   |  1.6   | 0.049  | 14     | 132    | 0.9940 | 3.30   | 0.49   |  9.5   | 6      | \n",
+       "| 8.1    | 0.28   | 0.40   |  6.9   | 0.050  | 30     |  97    | 0.9951 | 3.26   | 0.44   | 10.1   | 6      | \n",
+       "| 7.2    | 0.23   | 0.32   |  8.5   | 0.058  | 47     | 186    | 0.9956 | 3.19   | 0.40   |  9.9   | 6      | \n",
+       "| 7.2    | 0.23   | 0.32   |  8.5   | 0.058  | 47     | 186    | 0.9956 | 3.19   | 0.40   |  9.9   | 6      | \n",
+       "| 8.1    | 0.28   | 0.40   |  6.9   | 0.050  | 30     |  97    | 0.9951 | 3.26   | 0.44   | 10.1   | 6      | \n",
+       "\n",
+       "\n"
+      ],
+      "text/plain": [
+       "  fixed acidity volatile acidity citric acid residual sugar chlorides\n",
+       "1 7.0           0.27             0.36        20.7           0.045    \n",
+       "2 6.3           0.30             0.34         1.6           0.049    \n",
+       "3 8.1           0.28             0.40         6.9           0.050    \n",
+       "4 7.2           0.23             0.32         8.5           0.058    \n",
+       "5 7.2           0.23             0.32         8.5           0.058    \n",
+       "6 8.1           0.28             0.40         6.9           0.050    \n",
+       "  free sulfur dioxide total sulfur dioxide density pH   sulphates alcohol\n",
+       "1 45                  170                  1.0010  3.00 0.45       8.8   \n",
+       "2 14                  132                  0.9940  3.30 0.49       9.5   \n",
+       "3 30                   97                  0.9951  3.26 0.44      10.1   \n",
+       "4 47                  186                  0.9956  3.19 0.40       9.9   \n",
+       "5 47                  186                  0.9956  3.19 0.40       9.9   \n",
+       "6 30                   97                  0.9951  3.26 0.44      10.1   \n",
+       "  quality\n",
+       "1 6      \n",
+       "2 6      \n",
+       "3 6      \n",
+       "4 6      \n",
+       "5 6      \n",
+       "6 6      "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "white_wine <- 'https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv'\n",
+    "download.file(white_wine, destfile = 'white_wine_database.csv')\n",
+    "white_wine_data <- read_delim('white_wine_database.csv', delim = ';')  %>% na.omit()\n",
+    "head(white_wine_data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       " fixed acidity    volatile acidity  citric acid     residual sugar  \n",
+       " Min.   : 3.800   Min.   :0.0800   Min.   :0.0000   Min.   : 0.600  \n",
+       " 1st Qu.: 6.300   1st Qu.:0.2100   1st Qu.:0.2700   1st Qu.: 1.700  \n",
+       " Median : 6.800   Median :0.2600   Median :0.3200   Median : 5.200  \n",
+       " Mean   : 6.855   Mean   :0.2782   Mean   :0.3342   Mean   : 6.391  \n",
+       " 3rd Qu.: 7.300   3rd Qu.:0.3200   3rd Qu.:0.3900   3rd Qu.: 9.900  \n",
+       " Max.   :14.200   Max.   :1.1000   Max.   :1.6600   Max.   :65.800  \n",
+       "   chlorides       free sulfur dioxide total sulfur dioxide    density      \n",
+       " Min.   :0.00900   Min.   :  2.00      Min.   :  9.0        Min.   :0.9871  \n",
+       " 1st Qu.:0.03600   1st Qu.: 23.00      1st Qu.:108.0        1st Qu.:0.9917  \n",
+       " Median :0.04300   Median : 34.00      Median :134.0        Median :0.9937  \n",
+       " Mean   :0.04577   Mean   : 35.31      Mean   :138.4        Mean   :0.9940  \n",
+       " 3rd Qu.:0.05000   3rd Qu.: 46.00      3rd Qu.:167.0        3rd Qu.:0.9961  \n",
+       " Max.   :0.34600   Max.   :289.00      Max.   :440.0        Max.   :1.0390  \n",
+       "       pH          sulphates         alcohol         quality     \n",
+       " Min.   :2.720   Min.   :0.2200   Min.   : 8.00   Min.   :3.000  \n",
+       " 1st Qu.:3.090   1st Qu.:0.4100   1st Qu.: 9.50   1st Qu.:5.000  \n",
+       " Median :3.180   Median :0.4700   Median :10.40   Median :6.000  \n",
+       " Mean   :3.188   Mean   :0.4898   Mean   :10.51   Mean   :5.878  \n",
+       " 3rd Qu.:3.280   3rd Qu.:0.5500   3rd Qu.:11.40   3rd Qu.:6.000  \n",
+       " Max.   :3.820   Max.   :1.0800   Max.   :14.20   Max.   :9.000  "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "summary(white_wine_data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<ol class=list-inline>\n",
+       "\t<li>'fixed.acidity'</li>\n",
+       "\t<li>'volatile.acidity'</li>\n",
+       "\t<li>'citric.acid'</li>\n",
+       "\t<li>'residual.sugar'</li>\n",
+       "\t<li>'chlorides'</li>\n",
+       "\t<li>'free.sulfur.dioxide'</li>\n",
+       "\t<li>'total.sulfur.dioxide'</li>\n",
+       "\t<li>'density'</li>\n",
+       "\t<li>'pH'</li>\n",
+       "\t<li>'sulphates'</li>\n",
+       "\t<li>'alcohol'</li>\n",
+       "\t<li>'quality'</li>\n",
+       "</ol>\n"
+      ],
+      "text/latex": [
+       "\\begin{enumerate*}\n",
+       "\\item 'fixed.acidity'\n",
+       "\\item 'volatile.acidity'\n",
+       "\\item 'citric.acid'\n",
+       "\\item 'residual.sugar'\n",
+       "\\item 'chlorides'\n",
+       "\\item 'free.sulfur.dioxide'\n",
+       "\\item 'total.sulfur.dioxide'\n",
+       "\\item 'density'\n",
+       "\\item 'pH'\n",
+       "\\item 'sulphates'\n",
+       "\\item 'alcohol'\n",
+       "\\item 'quality'\n",
+       "\\end{enumerate*}\n"
+      ],
+      "text/markdown": [
+       "1. 'fixed.acidity'\n",
+       "2. 'volatile.acidity'\n",
+       "3. 'citric.acid'\n",
+       "4. 'residual.sugar'\n",
+       "5. 'chlorides'\n",
+       "6. 'free.sulfur.dioxide'\n",
+       "7. 'total.sulfur.dioxide'\n",
+       "8. 'density'\n",
+       "9. 'pH'\n",
+       "10. 'sulphates'\n",
+       "11. 'alcohol'\n",
+       "12. 'quality'\n",
+       "\n",
+       "\n"
+      ],
+      "text/plain": [
+       " [1] \"fixed.acidity\"        \"volatile.acidity\"     \"citric.acid\"         \n",
+       " [4] \"residual.sugar\"       \"chlorides\"            \"free.sulfur.dioxide\" \n",
+       " [7] \"total.sulfur.dioxide\" \"density\"              \"pH\"                  \n",
+       "[10] \"sulphates\"            \"alcohol\"              \"quality\"             "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "white_wine_data <- mutate(white_wine_data, quality = as.factor(quality))\n",
+    "colnames(white_wine_data) <- colnames(white_wine_data) %>% make.names()\n",
+    "colnames(white_wine_data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "white_wine_data <- white_wine_data  %>% \n",
+    "    mutate(scaled.fixed.acidity = scale(fixed.acidity, center = FALSE))  %>% \n",
+    "    mutate(scaled.residual.sugar = scale(residual.sugar, center = FALSE))  %>% \n",
+    "    mutate(scaled.free.sulfur.dioxide = scale(free.sulfur.dioxide, center = FALSE)) %>% \n",
+    "    mutate(scaled.total.sulfur.dioxide = scale(total.sulfur.dioxide, center = FALSE)) %>% \n",
+    "    mutate(scaled.alcohol = scale(alcohol, center = FALSE))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<table>\n",
+       "<thead><tr><th scope=col>fixed.acidity</th><th scope=col>volatile.acidity</th><th scope=col>citric.acid</th><th scope=col>residual.sugar</th><th scope=col>chlorides</th><th scope=col>free.sulfur.dioxide</th><th scope=col>total.sulfur.dioxide</th><th scope=col>density</th><th scope=col>pH</th><th scope=col>sulphates</th><th scope=col>alcohol</th><th scope=col>quality</th><th scope=col>scaled.fixed.acidity</th><th scope=col>scaled.residual.sugar</th><th scope=col>scaled.free.sulfur.dioxide</th><th scope=col>scaled.total.sulfur.dioxide</th><th scope=col>scaled.alcohol</th></tr></thead>\n",
+       "<tbody>\n",
+       "\t<tr><td>7.0      </td><td>0.27     </td><td>0.36     </td><td>20.7     </td><td>0.045    </td><td>45       </td><td>170      </td><td>1.0010   </td><td>3.00     </td><td>0.45     </td><td> 8.8     </td><td>6        </td><td>1.0134309</td><td>2.5367895</td><td>1.1481392</td><td>1.1744078</td><td>0.8311998</td></tr>\n",
+       "\t<tr><td>6.3      </td><td>0.30     </td><td>0.34     </td><td> 1.6     </td><td>0.049    </td><td>14       </td><td>132      </td><td>0.9940   </td><td>3.30     </td><td>0.49     </td><td> 9.5     </td><td>6        </td><td>0.9120878</td><td>0.1960804</td><td>0.3571989</td><td>0.9118931</td><td>0.8973179</td></tr>\n",
+       "\t<tr><td>8.1      </td><td>0.28     </td><td>0.40     </td><td> 6.9     </td><td>0.050    </td><td>30       </td><td> 97      </td><td>0.9951   </td><td>3.26     </td><td>0.44     </td><td>10.1     </td><td>6        </td><td>1.1726843</td><td>0.8455965</td><td>0.7654261</td><td>0.6701032</td><td>0.9539906</td></tr>\n",
+       "\t<tr><td>7.2      </td><td>0.23     </td><td>0.32     </td><td> 8.5     </td><td>0.058    </td><td>47       </td><td>186      </td><td>0.9956   </td><td>3.19     </td><td>0.40     </td><td> 9.9     </td><td>6        </td><td>1.0423861</td><td>1.0416769</td><td>1.1991676</td><td>1.2849402</td><td>0.9350997</td></tr>\n",
+       "\t<tr><td>7.2      </td><td>0.23     </td><td>0.32     </td><td> 8.5     </td><td>0.058    </td><td>47       </td><td>186      </td><td>0.9956   </td><td>3.19     </td><td>0.40     </td><td> 9.9     </td><td>6        </td><td>1.0423861</td><td>1.0416769</td><td>1.1991676</td><td>1.2849402</td><td>0.9350997</td></tr>\n",
+       "\t<tr><td>8.1      </td><td>0.28     </td><td>0.40     </td><td> 6.9     </td><td>0.050    </td><td>30       </td><td> 97      </td><td>0.9951   </td><td>3.26     </td><td>0.44     </td><td>10.1     </td><td>6        </td><td>1.1726843</td><td>0.8455965</td><td>0.7654261</td><td>0.6701032</td><td>0.9539906</td></tr>\n",
+       "</tbody>\n",
+       "</table>\n"
+      ],
+      "text/latex": [
+       "\\begin{tabular}{r|lllllllllllllllll}\n",
+       " fixed.acidity & volatile.acidity & citric.acid & residual.sugar & chlorides & free.sulfur.dioxide & total.sulfur.dioxide & density & pH & sulphates & alcohol & quality & scaled.fixed.acidity & scaled.residual.sugar & scaled.free.sulfur.dioxide & scaled.total.sulfur.dioxide & scaled.alcohol\\\\\n",
+       "\\hline\n",
+       "\t 7.0       & 0.27      & 0.36      & 20.7      & 0.045     & 45        & 170       & 1.0010    & 3.00      & 0.45      &  8.8      & 6         & 1.0134309 & 2.5367895 & 1.1481392 & 1.1744078 & 0.8311998\\\\\n",
+       "\t 6.3       & 0.30      & 0.34      &  1.6      & 0.049     & 14        & 132       & 0.9940    & 3.30      & 0.49      &  9.5      & 6         & 0.9120878 & 0.1960804 & 0.3571989 & 0.9118931 & 0.8973179\\\\\n",
+       "\t 8.1       & 0.28      & 0.40      &  6.9      & 0.050     & 30        &  97       & 0.9951    & 3.26      & 0.44      & 10.1      & 6         & 1.1726843 & 0.8455965 & 0.7654261 & 0.6701032 & 0.9539906\\\\\n",
+       "\t 7.2       & 0.23      & 0.32      &  8.5      & 0.058     & 47        & 186       & 0.9956    & 3.19      & 0.40      &  9.9      & 6         & 1.0423861 & 1.0416769 & 1.1991676 & 1.2849402 & 0.9350997\\\\\n",
+       "\t 7.2       & 0.23      & 0.32      &  8.5      & 0.058     & 47        & 186       & 0.9956    & 3.19      & 0.40      &  9.9      & 6         & 1.0423861 & 1.0416769 & 1.1991676 & 1.2849402 & 0.9350997\\\\\n",
+       "\t 8.1       & 0.28      & 0.40      &  6.9      & 0.050     & 30        &  97       & 0.9951    & 3.26      & 0.44      & 10.1      & 6         & 1.1726843 & 0.8455965 & 0.7654261 & 0.6701032 & 0.9539906\\\\\n",
+       "\\end{tabular}\n"
+      ],
+      "text/markdown": [
+       "\n",
+       "fixed.acidity | volatile.acidity | citric.acid | residual.sugar | chlorides | free.sulfur.dioxide | total.sulfur.dioxide | density | pH | sulphates | alcohol | quality | scaled.fixed.acidity | scaled.residual.sugar | scaled.free.sulfur.dioxide | scaled.total.sulfur.dioxide | scaled.alcohol | \n",
+       "|---|---|---|---|---|---|\n",
+       "| 7.0       | 0.27      | 0.36      | 20.7      | 0.045     | 45        | 170       | 1.0010    | 3.00      | 0.45      |  8.8      | 6         | 1.0134309 | 2.5367895 | 1.1481392 | 1.1744078 | 0.8311998 | \n",
+       "| 6.3       | 0.30      | 0.34      |  1.6      | 0.049     | 14        | 132       | 0.9940    | 3.30      | 0.49      |  9.5      | 6         | 0.9120878 | 0.1960804 | 0.3571989 | 0.9118931 | 0.8973179 | \n",
+       "| 8.1       | 0.28      | 0.40      |  6.9      | 0.050     | 30        |  97       | 0.9951    | 3.26      | 0.44      | 10.1      | 6         | 1.1726843 | 0.8455965 | 0.7654261 | 0.6701032 | 0.9539906 | \n",
+       "| 7.2       | 0.23      | 0.32      |  8.5      | 0.058     | 47        | 186       | 0.9956    | 3.19      | 0.40      |  9.9      | 6         | 1.0423861 | 1.0416769 | 1.1991676 | 1.2849402 | 0.9350997 | \n",
+       "| 7.2       | 0.23      | 0.32      |  8.5      | 0.058     | 47        | 186       | 0.9956    | 3.19      | 0.40      |  9.9      | 6         | 1.0423861 | 1.0416769 | 1.1991676 | 1.2849402 | 0.9350997 | \n",
+       "| 8.1       | 0.28      | 0.40      |  6.9      | 0.050     | 30        |  97       | 0.9951    | 3.26      | 0.44      | 10.1      | 6         | 1.1726843 | 0.8455965 | 0.7654261 | 0.6701032 | 0.9539906 | \n",
+       "\n",
+       "\n"
+      ],
+      "text/plain": [
+       "  fixed.acidity volatile.acidity citric.acid residual.sugar chlorides\n",
+       "1 7.0           0.27             0.36        20.7           0.045    \n",
+       "2 6.3           0.30             0.34         1.6           0.049    \n",
+       "3 8.1           0.28             0.40         6.9           0.050    \n",
+       "4 7.2           0.23             0.32         8.5           0.058    \n",
+       "5 7.2           0.23             0.32         8.5           0.058    \n",
+       "6 8.1           0.28             0.40         6.9           0.050    \n",
+       "  free.sulfur.dioxide total.sulfur.dioxide density pH   sulphates alcohol\n",
+       "1 45                  170                  1.0010  3.00 0.45       8.8   \n",
+       "2 14                  132                  0.9940  3.30 0.49       9.5   \n",
+       "3 30                   97                  0.9951  3.26 0.44      10.1   \n",
+       "4 47                  186                  0.9956  3.19 0.40       9.9   \n",
+       "5 47                  186                  0.9956  3.19 0.40       9.9   \n",
+       "6 30                   97                  0.9951  3.26 0.44      10.1   \n",
+       "  quality scaled.fixed.acidity scaled.residual.sugar scaled.free.sulfur.dioxide\n",
+       "1 6       1.0134309            2.5367895             1.1481392                 \n",
+       "2 6       0.9120878            0.1960804             0.3571989                 \n",
+       "3 6       1.1726843            0.8455965             0.7654261                 \n",
+       "4 6       1.0423861            1.0416769             1.1991676                 \n",
+       "5 6       1.0423861            1.0416769             1.1991676                 \n",
+       "6 6       1.1726843            0.8455965             0.7654261                 \n",
+       "  scaled.total.sulfur.dioxide scaled.alcohol\n",
+       "1 1.1744078                   0.8311998     \n",
+       "2 0.9118931                   0.8973179     \n",
+       "3 0.6701032                   0.9539906     \n",
+       "4 1.2849402                   0.9350997     \n",
+       "5 1.2849402                   0.9350997     \n",
+       "6 0.6701032                   0.9539906     "
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "head(white_wine_data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "set.seed(2019)\n",
+    "\n",
+    "white_train <- createDataPartition(white_wine_data$quality, p = 0.75, list = FALSE)\n",
+    "\n",
+    "training_set <- white_wine_data %>% slice(white_train)\n",
+    "testing_set <- white_wine_data %>% slice(-white_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_train <- training_set %>% \n",
+    "    select(-fixed.acidity, -residual.sugar, -free.sulfur.dioxide, -total.sulfur.dioxide, -alcohol) %>% \n",
+    "    data.frame()\n",
+    "Y_train <- training_set %>% \n",
+    "    select(quality) %>% \n",
+    "    unlist()\n",
+    "\n",
+    "X_test <- testing_set %>% \n",
+    "    select(-fixed.acidity, -residual.sugar, -free.sulfur.dioxide, -total.sulfur.dioxide, -alcohol) %>% \n",
+    "    data.frame()\n",
+    "Y_test <- testing_set %>% \n",
+    "    select(quality) %>% \n",
+    "    unlist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "k-Nearest Neighbors \n",
+       "\n",
+       "3676 samples\n",
+       "  12 predictor\n",
+       "   7 classes: '3', '4', '5', '6', '7', '8', '9' \n",
+       "\n",
+       "No pre-processing\n",
+       "Resampling: Cross-Validated (10 fold) \n",
+       "Summary of sample sizes: 3309, 3308, 3310, 3309, 3308, 3308, ... \n",
+       "Resampling results across tuning parameters:\n",
+       "\n",
+       "  k   Accuracy   Kappa    \n",
+       "   1  0.9991840  0.9987923\n",
+       "   3  0.9978253  0.9967832\n",
+       "   5  0.9975543  0.9963827\n",
+       "   7  0.9964659  0.9947698\n",
+       "   9  0.9964659  0.9947694\n",
+       "  11  0.9956514  0.9935661\n",
+       "  13  0.9942898  0.9915462\n",
+       "  17  0.9942898  0.9915462\n",
+       "  19  0.9940173  0.9911394\n",
+       "  21  0.9940173  0.9911394\n",
+       "\n",
+       "Accuracy was used to select the optimal model using the largest value.\n",
+       "The final value used for the model was k = 1."
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "k = data.frame(k = c(1,3,5,7,9,11,13,17,19,21))\n",
+    "train_control <- trainControl(method = 'cv', number = 10)\n",
+    "knn_all <- train(x = X_train, y = Y_train, method = 'knn', tuneGrid = k, trControl = train_control)\n",
+    "knn_all\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_sulphate <- training_set %>% \n",
+    "    select(sulphates) %>% \n",
+    "    data.frame()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "k-Nearest Neighbors \n",
+       "\n",
+       "3676 samples\n",
+       "   1 predictor\n",
+       "   7 classes: '3', '4', '5', '6', '7', '8', '9' \n",
+       "\n",
+       "No pre-processing\n",
+       "Resampling: Cross-Validated (10 fold) \n",
+       "Summary of sample sizes: 3309, 3307, 3307, 3308, 3308, 3307, ... \n",
+       "Resampling results across tuning parameters:\n",
+       "\n",
+       "  k   Accuracy   Kappa     \n",
+       "   1  0.4380067  0.01373803\n",
+       "   3  0.4361097  0.01130125\n",
+       "   5  0.4388175  0.01324446\n",
+       "   7  0.4382792  0.01230457\n",
+       "   9  0.4399074  0.01443938\n",
+       "  11  0.4399081  0.01418941\n",
+       "  13  0.4396416  0.01414780\n",
+       "  17  0.4399096  0.01384342\n",
+       "  19  0.4415379  0.01625205\n",
+       "  21  0.4423627  0.01629339\n",
+       "\n",
+       "Accuracy was used to select the optimal model using the largest value.\n",
+       "The final value used for the model was k = 21."
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "knn_sulphate <- train(x = X_sulphate, y = Y_train, method = 'knn', tuneGrid = k, trControl = train_control)\n",
+    "knn_sulphate\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ggplot(white_wine_data, )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "R",
+   "language": "R",
+   "name": "ir"
+  },
+  "language_info": {
+   "codemirror_mode": "r",
+   "file_extension": ".r",
+   "mimetype": "text/x-r-source",
+   "name": "R",
+   "pygments_lexer": "r",
+   "version": "3.4.1"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
